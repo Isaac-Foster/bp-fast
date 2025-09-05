@@ -1,0 +1,55 @@
+[project]
+name = "boiler-plate-fast"
+version = "0.1.0"
+description = "Add your description here"
+requires-python = ">=3.13"
+dependencies = [
+    "alembic>=1.16.4",
+    "asyncpg>=0.30.0",
+    "bcrypt>=4.3.0",
+    "fastapi>=0.116.1",
+    "loguru>=0.7.3",
+    "pre-commit>=4.2.0",
+    "psycopg[binary]>=3.2.9",
+    "pydantic-settings>=2.10.1",
+    "python-dotenv>=1.1.1",
+    "sqlalchemy>=2.0.42",
+    "uvicorn>=0.35.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.5",
+    "pytest-cov>=6.1.1",
+    "ruff>=0.11.8",
+    "taskipy>=1.14.1",
+    "pytest-asyncio>=0.26.0",
+]
+
+[tool.ruff]
+line-length = 79
+exclude = ["tests", ".venv", "migrations/", "*.txt", "*.pyc", "*.pyo"]
+
+[tool.ruff.lint]
+ignore = ["SIM103"]
+
+[tool.lint]
+select = ["E", "F", "Q", "I"]
+fix = true
+unsafe-fixes = false
+
+[tool.ruff.format]
+quote-style = "single"
+
+[tool.taskipy.tasks]
+# runs
+run = { cmd = "uvicorn src:app --reload", cwd = "." }
+
+# docker
+up = "docker compose up -d"
+down = " docker compose down"
+restart = "task down && task up && clear"
+
+# linter
+lint = "ruff check . && ruff check . --diff"
+format = "ruff check . --fix --unsafe-fixes && ruff format ."
