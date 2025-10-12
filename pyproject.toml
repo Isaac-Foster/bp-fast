@@ -33,7 +33,7 @@ dev = [
 
 [tool.taskipy.tasks]
 format = "ruff check . --fix && ruff format ."
-lint = "ruff check ."
+lint = "ruff check . && ruff . --diff"
 start = "uvicorn src:app --reload"
 
 test = "pytest --cov -vv"
