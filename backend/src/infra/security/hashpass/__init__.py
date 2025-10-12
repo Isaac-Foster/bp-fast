@@ -1,7 +1,7 @@
 from bcrypt import checkpw, gensalt, hashpw
 
 
-class CryptographyManager:
+class HashPassManager:
     @staticmethod
     def hash(password: str) -> str:
         """Gera um hash de senha."""
@@ -15,11 +15,14 @@ class CryptographyManager:
         )
 
 
+hash_pass_manager = HashPassManager()
+
+
 if __name__ == '__main__':
     password = 'S3nhaF0rte21@#*'
-    hashed_password = CryptographyManager.hash(password)
+    hashed_password = hash_pass_manager.hash(password)
     print('Hashed password:', hashed_password)
     print(
         'Password is valid:',
-        CryptographyManager.verify(password, hashed_password),
+        hash_pass_manager.verify(password, hashed_password),
     )

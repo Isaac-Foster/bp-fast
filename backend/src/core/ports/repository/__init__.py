@@ -9,3 +9,21 @@ class RepositoryPort(Protocol):
         self.session = session
         self.model = None
         self.schema: type[BaseModel] = None
+
+    async def create(self, data: BaseModel):
+        pass
+
+    async def get(self, id):
+        pass
+
+    async def get_all(self):
+        pass
+
+    async def update(self, id, data: BaseModel):
+        pass
+
+    async def delete(self, id):
+        pass
+
+    async def search(self, **kwargs):
+        pass

@@ -10,10 +10,14 @@ dependencies = [
     "email-validator>=2.0.0",
     "fastapi>=0.119.0",
     "loguru>=0.7.3",
+    "pre-commit>=4.3.0",
     "pydantic>=2.12.0",
     "pydantic-settings>=2.11.0",
     "pyjwt>=2.10.1",
     "pyotp>=2.9.0",
+    "pytest>=8.4.2",
+    "pytest-asyncio>=1.2.0",
+    "pytest-cov>=7.0.0",
     "python-multipart>=0.0.20",
     "qrcode>=8.2",
     "redis>=6.4.0",
@@ -28,7 +32,7 @@ dev = [
 ]
 
 [tool.taskipy.tasks]
-format = "ruff format ."
+format = "ruff check . --fix && ruff format ."
 lint = "ruff check ."
 start = "uvicorn src:app --reload"
 
@@ -59,7 +63,7 @@ ignore = ["SIM103", "E701", "E722", "F821"]
 addopts = "-q --disable-warnings"
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
-testpaths = ["tests"]
+testpaths = ["backend/tests"]
 pythonpath = ["."]
 markers = [
     "asyncio: Mark a test as asyncio test."

@@ -1,2 +1,8 @@
 .env
 */__pycache__/*
+.ruff_cache
+.venv
+logs/
+app.log
+*.pyc
+__pycache__/

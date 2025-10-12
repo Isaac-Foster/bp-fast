@@ -1,8 +1,8 @@
 async def init_db():
     from . import (
-        user,
-        fingerprint,
-        config,
+        user,  # noqa
+        fingerprint,  # noqa
+        config,  # noqa
     )
     from src.infra.connect.sql import register, engine
 
