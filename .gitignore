@@ -8,3 +8,4 @@ app.log
 __pycache__/
 htmlcov
 .coverage
+.pytest_cache/
