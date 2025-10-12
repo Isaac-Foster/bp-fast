@@ -6,3 +6,4 @@ logs/
 app.log
 *.pyc
 __pycache__/
+htmlcov
