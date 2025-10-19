@@ -4,7 +4,7 @@ from fastapi import HTTPException
 from src.utils import is_strong_pass
 
 
-class Signup(BaseModel):
+class SignUp(BaseModel):
     username: str = Field(..., min_length=5, max_length=50)
     password: str = Field(..., min_length=8, max_length=30)
     email: EmailStr = Field(..., min_length=12, max_length=255)
@@ -24,3 +24,8 @@ class Signup(BaseModel):
                 status_code=400, detail='Password is not strong enough'
             )
         return self
+
+
+class SignIn(BaseModel):
+    username: str = Field(..., min_length=5, max_length=50)
+    password: str = Field(..., min_length=8, max_length=30)

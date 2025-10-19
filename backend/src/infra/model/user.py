@@ -31,7 +31,7 @@ class UserModel:
     attempts: Mapped[int] = mapped_column(Integer, default=0, init=False)
     blocked: Mapped[bool] = mapped_column(Boolean, default=False, init=False)
 
-    last_login: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    last_login: Mapped[datetime] = mapped_column(default=None, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow, init=False

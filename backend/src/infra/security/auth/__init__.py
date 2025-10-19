@@ -10,7 +10,7 @@ from config import config
 from src.infra.connect.sql import get_session
 
 # from src.infra.security.hashpass import hash_pass_manager
-from src.core.adapter.repository.user import UserRepository
+from src.adapter.repository.user import UserRepository
 
 
 o2auth_schema = OAuth2PasswordBearer(tokenUrl='api/auth/user/login')

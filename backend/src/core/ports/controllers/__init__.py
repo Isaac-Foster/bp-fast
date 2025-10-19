@@ -12,3 +12,4 @@ class ControllerPort(Protocol):
         self.session = session
         self.repository: RepositoryPort = None
         self.schema: type[BaseModel] = None
+        self.response = response

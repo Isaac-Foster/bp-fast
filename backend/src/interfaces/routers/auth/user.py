@@ -1,16 +1,18 @@
-from fastapi import APIRouter, Depends
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi import APIRouter, Query
 
-from src.interfaces.schema.auth import Signup
+from src.interfaces.schema.auth import SignUp, SignIn
 
 router = APIRouter()
 
 
 @router.post('/signup')
-async def signup(data: Signup):
+async def signup(data: SignUp):
     return data
 
 
 @router.post('/signin')
-async def signin(data: OAuth2PasswordRequestForm = Depends()):
+async def signin(
+    data: SignIn, totp: str = Query(default=None, pattern=r'^\d{6}$')
+):
+    print(totp)
     return data
