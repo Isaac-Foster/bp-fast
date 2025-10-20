@@ -1,12 +1,12 @@
 # BP-Fast - Sistema de Autenticação Seguro
 
-Um sistema de autenticação robusto e seguro construído com FastAPI, Vue.js e Redis, implementando as melhores práticas de segurança para autenticação moderna.
+Um sistema de autenticação robusto e seguro construído com FastAPI, Vue.js e Redis, implementando as melhores práticas de segurança para autenticação moderna baseada em sessões.
 
 ## 🎯 Objetivo
 
 Este projeto serve como um template completo para sistemas de autenticação que implementam:
 
-- **Autenticação JWT com invalidação por sessão**
+- **Sistema de sessões Redis com UUIDv7**
 - **Autenticação de dois fatores (2FA) com OTP**
 - **Sistema de fingerprint para detecção de dispositivos**
 - **Recuperação de senha via email**
@@ -25,8 +25,7 @@ backend/
 │   │   ├── connect/       # Conexões (DB, Redis)
 │   │   ├── model/         # Modelos SQLAlchemy
 │   │   ├── security/      # Módulos de segurança
-│   │   │   ├── auth/      # JWT Manager
-│   │   │   ├── session/   # Gerenciamento de sessões
+│   │   │   ├── auth/      # Sistema de autenticação
 │   │   │   ├── hashpass/  # Hash de senhas (bcrypt)
 │   │   │   └── otp/       # Autenticação 2FA
 │   │   └── security/
@@ -48,20 +47,22 @@ frontend/
 
 ## 🔐 Recursos de Segurança
 
-### 1. Sistema de Sessões com Redis
-- **Session ID UUIDv7**: Identificador único para cada sessão
-- **Invalidação centralizada**: JWT invalidadas via Redis, não no servidor
+### 1. Sistema de Sessões Redis Avançado
+- **Session ID UUIDv7**: Identificador único para cada sessão usando UUID versão 7
+- **Gerenciamento atômico**: Operações Lua scripts para garantir consistência
 - **TTL configurável**: Sessões expiram automaticamente
 - **Mapeamento bidirecional**: `session_id → user_id` e `user_id → session_id`
+- **Cookies HTTPOnly**: Session ID armazenado em cookies seguros
+- **Invalidação centralizada**: Logout instantâneo via Redis
 
-### 2. Autenticação JWT Aprimorada
+### 2. Autenticação Baseada em Sessões
 ```python
-# Claims do JWT incluem session_id
+# Estrutura de dados da sessão no Redis
 {
-    "id": user_id,
-    "session_id": "uuid-v7-session-id",
-    "exp": timestamp,
-    "iat": timestamp
+    "user_id": "123",
+    "username": "usuario",
+    "login_time": "2024-01-01T10:00:00Z",
+    "fingerprint": "device_hash"
 }
 ```
 
@@ -97,7 +98,6 @@ frontend/
 - **SQLAlchemy**: ORM com suporte assíncrono
 - **PostgreSQL**: Banco de dados principal
 - **Redis**: Cache e gerenciamento de sessões
-- **JWT**: Tokens de autenticação
 - **bcrypt**: Hash de senhas
 - **pyotp**: Geração e validação de OTP
 - **Alembic**: Sistema de migrações de banco de dados
@@ -123,17 +123,20 @@ graph TD
     A[Login: username + password] --> B[Verificar credenciais]
     B --> C[Gerar session_id UUIDv7]
     C --> D[Armazenar sessão no Redis]
-    D --> E[Gerar JWT com session_id]
+    D --> E[Definir cookie HTTPOnly]
     E --> F[Verificar 2FA OTP]
     F --> G[Validar fingerprint]
     G --> H[Login realizado]
     
-    I[Requisição autenticada] --> J[Validar JWT]
-    J --> K[Extrair session_id]
-    K --> L[Verificar sessão no Redis]
-    L --> M[Sessão válida?]
-    M -->|Sim| N[Processar requisição]
-    M -->|Não| O[Retornar 401 Unauthorized]
+    I[Requisição autenticada] --> J[Extrair session_id do cookie]
+    J --> K[Validar sessão no Redis]
+    K --> L[Sessão válida?]
+    L -->|Sim| M[Processar requisição]
+    L -->|Não| N[Retornar 401 Unauthorized]
+    
+    O[Logout] --> P[Remover sessão do Redis]
+    P --> Q[Limpar cookie]
+    Q --> R[Logout realizado]
 ```
 
 ## 🛠️ Instalação e Configuração
@@ -164,11 +167,6 @@ nano .env
 
 **Configurações importantes no `.env`:**
 ```env
-# JWT Configuration
-jwt_secret=your-super-secret-key-here
-jwt_algorithm=HS256
-jwt_expiration_time=3600
-
 # Redis Configuration
 redis_host=localhost
 redis_port=6379
@@ -182,6 +180,11 @@ postgres_db_password=secure_password
 postgres_db_host=localhost
 postgres_db_port=5432
 postgres_db_name=bp_fast_db
+
+# JWT Configuration (mantido para compatibilidade, mas não usado)
+jwt_secret=your-super-secret-key-here
+jwt_algorithm=HS256
+jwt_expiration_time=3600
 ```
 
 ### 3. Instalação das dependências
@@ -298,12 +301,13 @@ Veja o arquivo [TODO.md](./TODO.md) para acompanhar o progresso de desenvolvimen
 
 ### Implementadas
 - ✅ Hash de senhas com bcrypt
-- ✅ JWT com invalidação por sessão
-- ✅ Rate limiting (recomendado implementar)
+- ✅ Sistema de sessões Redis com UUIDv7
+- ✅ Cookies HTTPOnly para session ID
 - ✅ Validação de entrada rigorosa
 - ✅ Headers de segurança
 - ✅ CORS configurado
 - ✅ Logs de segurança
+- ✅ Operações atômicas com Lua scripts
 
 ### Recomendações Adicionais
 - Implementar rate limiting
@@ -312,6 +316,7 @@ Veja o arquivo [TODO.md](./TODO.md) para acompanhar o progresso de desenvolvimen
 - Implementar logging de auditoria
 - Adicionar headers de segurança (HSTS, CSP)
 - Configurar backup automático do Redis
+- Implementar refresh token para sessões longas
 
 ## 📝 Estrutura do Banco de Dados
 
@@ -347,6 +352,23 @@ CREATE TABLE fingerprints (
     updated_at TIMESTAMP DEFAULT NOW()
 );
 ```
+
+## 🔄 Vantagens do Sistema de Sessões
+
+### Comparado ao JWT:
+- **Invalidação instantânea**: Logout imediato sem esperar expiração
+- **Controle centralizado**: Todas as sessões gerenciadas no Redis
+- **Segurança aprimorada**: Session ID não contém informações sensíveis
+- **Auditoria completa**: Rastreamento de todas as sessões ativas
+- **Escalabilidade**: Redis permite distribuição horizontal
+- **Flexibilidade**: TTL dinâmico e extensão de sessão
+
+### Características Técnicas:
+- **UUIDv7**: Identificadores únicos com timestamp incorporado
+- **Lua Scripts**: Operações atômicas garantem consistência
+- **Cookies HTTPOnly**: Prevenção de ataques XSS
+- **TTL Configurável**: Tempo de vida das sessões ajustável
+- **Mapeamento Duplo**: Busca rápida por usuário ou sessão
 
 ## 🤝 Contribuição
 
