@@ -11,6 +11,7 @@ dependencies = [
     "fastapi>=0.119.0",
     "loguru>=0.7.3",
     "pre-commit>=4.3.0",
+    "psycopg[binary]>=3.2.11",
     "pydantic>=2.12.0",
     "pydantic-settings>=2.11.0",
     "pyjwt>=2.10.1",
@@ -35,7 +36,7 @@ dev = [
 [tool.taskipy.tasks]
 format = "ruff check . --fix && ruff format ."
 lint = "ruff check ."
-start = "uvicorn backend.src:app --reload"
+start = "uvicorn src:app --reload"
 
 test = "pytest --cov -vv"
 post_test = "coverage html"
@@ -44,7 +45,7 @@ down = "docker compose down"
 
 [tool.ruff]
 line-length = 79
-exclude = ["tests", ".venv", ".ruff_cache"]
+exclude = ["tests", ".venv", ".ruff_cache", "migrations", "pyproject.toml"]
 
 
 [tool.lint]

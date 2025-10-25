@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 
 import jwt
 from fastapi import Depends, HTTPException
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config import config
@@ -13,7 +13,7 @@ from src.infra.connect.sql import get_session
 from src.adapter.repository.user import UserRepository
 
 
-o2auth_schema = OAuth2PasswordBearer(tokenUrl='api/auth/user/login')
+o2auth_schema = HTTPBearer()
 
 
 class JWTManager:
@@ -52,14 +52,14 @@ class JWTManager:
 
 
 async def get_current_user(
-    token: str = Depends(o2auth_schema),
+    token: str = Depends(HTTPBearer()),
     session: AsyncSession = Depends(get_session),
 ):
     repository = UserRepository(session)
     try:
-        payload = JWTManager().validate(token)
+        payload = JWTManager().validate(token.credentials)
     except jwt.exceptions.ExpiredSignatureError:
-        payload = JWTManager().decode_ignore_exp(token)
+        payload = JWTManager().decode_ignore_exp(token.credentials)
         user = await repository.find_by_id(payload['id'])
         user.allowed = False
         await repository.session.commit()

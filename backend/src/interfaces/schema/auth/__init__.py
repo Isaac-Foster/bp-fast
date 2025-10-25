@@ -5,9 +5,12 @@ from src.utils import is_strong_pass
 
 
 class SignUp(BaseModel):
+    name: str = Field(..., min_length=5, max_length=64)
+    surname: str = Field(..., min_length=5, max_length=64)
+    email: EmailStr = Field(..., min_length=12, max_length=255)
+    phone: str = Field(..., min_length=12, max_length=255)
     username: str = Field(..., min_length=5, max_length=50)
     password: str = Field(..., min_length=8, max_length=30)
-    email: EmailStr = Field(..., min_length=12, max_length=255)
 
     @model_validator(mode='after')
     def validate_email(self):

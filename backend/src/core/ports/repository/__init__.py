@@ -27,3 +27,6 @@ class RepositoryPort(Protocol):
 
     async def search(self, **kwargs):
         pass
+
+    async def find(self, **kwargs):
+        pass

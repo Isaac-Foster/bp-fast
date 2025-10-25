@@ -19,19 +19,30 @@ class UserModel:
     id: int = mapped_column(
         Integer, primary_key=True, autoincrement=True, init=False
     )
+
+    name: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    surname: Mapped[str] = mapped_column(
+        String(64), nullable=False, index=True
+    )
+    email: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    phone: Mapped[str] = mapped_column(String(15), nullable=True, index=True)
     username: Mapped[str] = mapped_column(String(64), unique=True, index=True)
     password: Mapped[str] = mapped_column(String(128))
 
     logged_in: Mapped[bool] = mapped_column(Boolean, default=False, init=False)
 
-    secret_otp: Mapped[str] = mapped_column(String(128), nullable=True)
-    otp: Mapped[bool] = mapped_column(Boolean, default=False, nullable=True)
+    secret_otp: Mapped[str] = mapped_column(
+        String(128), nullable=True, init=False
+    )
+    otp: Mapped[bool] = mapped_column(Boolean, default=False, init=False)
     allowed: Mapped[bool] = mapped_column(Boolean, default=True, init=False)
 
     attempts: Mapped[int] = mapped_column(Integer, default=0, init=False)
     blocked: Mapped[bool] = mapped_column(Boolean, default=False, init=False)
 
-    last_login: Mapped[datetime] = mapped_column(default=None, nullable=True)
+    last_login: Mapped[datetime] = mapped_column(
+        default=None, nullable=True, init=False
+    )
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow, init=False

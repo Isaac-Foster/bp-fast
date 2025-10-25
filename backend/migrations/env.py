@@ -5,9 +5,13 @@ from sqlalchemy import pool
 
 from alembic import context
 
-from src.infra.models import register
+from src.infra.model import register
 
 config = context.config
+config.set_main_option(
+    'sqlalchemy.url',
+    'postgresql+psycopg://postgres:admin@localhost:5432/postgres',
+)
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
