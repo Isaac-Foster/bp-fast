@@ -50,33 +50,34 @@ frontend/
 
 ## 🔐 Recursos de Segurança Avançados
 
-### 1. Sistema Híbrido JWT + Sessões Redis
+### 1. Sistema Híbrido JWT + Sessões Redis Flexível
 
-**Configuração dinâmica** que permite alternar entre métodos de autenticação:
+**Configuração dinâmica** que permite alternar entre métodos de autenticação e modos de login:
 
 ```python
 # Configuração no .env
 APP_AUTH_METHOD=JWT        # ou COOKIE
-APP_LOGIN_MODE=UNIQUE         # ou MULTIPLE
+APP_LOGIN_MODE=UNIQUE      # ou MULTIPLE
 ```
 
-**JWT com Session ID (Login Único):**
-- **Session ID UUIDv7** incorporado no JWT
-- **Invalidação centralizada** via Redis
+**JWT Flexível:**
+- **Login Único**: JWT contém `session_id` → invalida login anterior
+- **Login Múltiplo**: JWT sem `session_id` → permite múltiplos logins
+- **Invalidação centralizada** via Redis quando necessário
 - **Logout instantâneo** sem esperar expiração do token
-- **Controle de sessão única** por usuário
 
-**Sessões Redis (Login Múltiplo):**
-- **Múltiplas sessões** simultâneas por usuário
+**Sessões Redis Flexíveis:**
+- **Login Único**: Valida por `user_id` → invalida sessão anterior
+- **Login Múltiplo**: Sem validação de sessão ativa → permite múltiplas sessões
 - **Cookies HTTPOnly** para session IDs
 - **TTL configurável** por sessão
 - **Gerenciamento granular** de dispositivos
 
 ### 2. Modos de Login Configuráveis
 
-**Login Único (UNIQUE):**
+**JWT - Login Único (UNIQUE):**
 ```python
-# Estrutura JWT com session_id
+# Estrutura JWT COM session_id (invalida login anterior)
 {
     "user_id": "123",
     "session_id": "uuid-v7-session-id",
@@ -85,9 +86,28 @@ APP_LOGIN_MODE=UNIQUE         # ou MULTIPLE
 }
 ```
 
-**Login Múltiplo (MULTIPLE):**
+**JWT - Login Múltiplo (MULTIPLE):**
 ```python
-# Estrutura de dados da sessão no Redis
+# Estrutura JWT SEM session_id (permite múltiplos logins)
+{
+    "user_id": "123",
+    "exp": timestamp,
+    "iat": timestamp
+}
+```
+
+**Sessões Redis - Login Único (UNIQUE):**
+```python
+# Validação por user_id (invalida sessão anterior)
+# Busca: user_session:{user_id} → remove sessão ativa
+# Cria: nova sessão para o usuário
+```
+
+**Sessões Redis - Login Múltiplo (MULTIPLE):**
+```python
+# Sem validação de sessão ativa (permite múltiplas sessões)
+# Cria: nova sessão sem verificar sessões existentes
+# Estrutura da sessão:
 {
     "user_id": "123",
     "username": "usuario",
@@ -99,16 +119,29 @@ APP_LOGIN_MODE=UNIQUE         # ou MULTIPLE
 
 ### 3. Sistema de Invalidação Inteligente
 
-**JWT com Session ID:**
+**JWT - Login Único:**
 - Token contém `session_id` único
 - Validação verifica se `session_id` existe no Redis
 - Logout remove `session_id` do Redis
 - Token fica inválido instantaneamente
 
-**Sessões Redis:**
-- Mapeamento bidirecional: `session_id → user_id` e `user_id → session_id`
-- Operações atômicas com Lua scripts
-- Invalidação individual ou em massa
+**JWT - Login Múltiplo:**
+- Token sem `session_id` nos claims
+- Validação apenas da assinatura e expiração
+- Logout não afeta outros logins ativos
+- Tokens independentes por dispositivo
+
+**Sessões Redis - Login Único:**
+- Busca sessão ativa por `user_id`
+- Remove sessão anterior antes de criar nova
+- Mapeamento: `user_session:{user_id} → session_id`
+- Invalidação automática de login anterior
+
+**Sessões Redis - Login Múltiplo:**
+- Sem verificação de sessões ativas
+- Cria nova sessão independentemente
+- Múltiplas sessões simultâneas por usuário
+- Invalidação individual por `session_id`
 
 ### 4. Autenticação de Dois Fatores (2FA)
 - **TOTP com pyotp**: Códigos de 6 dígitos válidos por 30 segundos
@@ -168,14 +201,14 @@ APP_LOGIN_MODE=UNIQUE         # ou MULTIPLE
 
 ## 📋 Fluxos de Autenticação
 
-### Fluxo JWT com Session ID (Login Único)
+### Fluxo JWT - Login Único (UNIQUE)
 
 ```mermaid
 graph TD
     A[Login: username + password] --> B[Verificar credenciais]
     B --> C[Gerar session_id UUIDv7]
     C --> D[Armazenar session_id no Redis]
-    D --> E[Gerar JWT com session_id]
+    D --> E[Gerar JWT COM session_id]
     E --> F[Verificar 2FA OTP]
     F --> G[Validar fingerprint]
     G --> H[Login realizado - Token retornado]
@@ -191,7 +224,55 @@ graph TD
     Q --> R[JWT fica inválido instantaneamente]
 ```
 
-### Fluxo Sessões Redis (Login Múltiplo)
+### Fluxo JWT - Login Múltiplo (MULTIPLE)
+
+```mermaid
+graph TD
+    A[Login: username + password] --> B[Verificar credenciais]
+    B --> C[Gerar JWT SEM session_id]
+    C --> D[Verificar 2FA OTP]
+    D --> E[Validar fingerprint]
+    E --> F[Login realizado - Token retornado]
+    
+    G[Requisição autenticada] --> H[Validar JWT]
+    H --> I[Verificar assinatura e expiração]
+    I --> J[Token válido?]
+    J -->|Sim| K[Processar requisição]
+    J -->|Não| L[Retornar 401 Unauthorized]
+    
+    M[Logout] --> N[Token fica inválido por expiração]
+    N --> O[Outros logins permanecem ativos]
+```
+
+### Fluxo Sessões Redis - Login Único (UNIQUE)
+
+```mermaid
+graph TD
+    A[Login: username + password] --> B[Verificar credenciais]
+    B --> C[Buscar sessão ativa por user_id]
+    C --> D[Sessão anterior existe?]
+    D -->|Sim| E[Remover sessão anterior]
+    D -->|Não| F[Continuar]
+    E --> F
+    F --> G[Gerar session_id UUIDv7]
+    G --> H[Armazenar nova sessão no Redis]
+    H --> I[Definir cookie HTTPOnly]
+    I --> J[Verificar 2FA OTP]
+    J --> K[Validar fingerprint]
+    K --> L[Login realizado - Cookie definido]
+    
+    M[Requisição autenticada] --> N[Extrair session_id do cookie]
+    N --> O[Validar sessão no Redis]
+    O --> P[Sessão válida?]
+    P -->|Sim| Q[Processar requisição]
+    P -->|Não| R[Retornar 401 Unauthorized]
+    
+    S[Logout] --> T[Remover sessão específica do Redis]
+    T --> U[Limpar cookie]
+    U --> V[Logout realizado]
+```
+
+### Fluxo Sessões Redis - Login Múltiplo (MULTIPLE)
 
 ```mermaid
 graph TD
@@ -211,7 +292,7 @@ graph TD
     
     O[Logout] --> P[Remover sessão específica do Redis]
     P --> Q[Limpar cookie]
-    Q --> R[Logout realizado]
+    Q --> R[Logout realizado - Outras sessões ativas]
 ```
 
 ## 🛠️ Instalação e Configuração
@@ -264,8 +345,8 @@ jwt_expiration_time=3600
 # App Configuration
 app_name=bp-fast
 app_version=0.1.0
-app_auth_method=JWT          # JWT ou COOKIE
-login_mode=UNIQUE           # UNIQUE ou MULTIPLE
+APP_AUTH_METHOD=JWT          # JWT ou COOKIE
+APP_LOGIN_MODE=UNIQUE        # UNIQUE ou MULTIPLE
 
 # TOTP Configuration
 totp_interval=30
@@ -439,45 +520,71 @@ CREATE TABLE fingerprints (
 );
 ```
 
-## 🔄 Vantagens do Sistema Híbrido
+## 🔄 Vantagens do Sistema Híbrido Flexível
 
-### JWT com Session ID (Login Único)
+### JWT Flexível
+
+**Login Único (COM session_id):**
 - **Invalidação instantânea**: Logout imediato sem esperar expiração
-- **Controle centralizado**: Todas as sessões gerenciadas no Redis
-- **Segurança aprimorada**: Session ID não contém informações sensíveis
-- **Auditoria completa**: Rastreamento de todas as sessões ativas
-- **Escalabilidade**: Redis permite distribuição horizontal
-- **Flexibilidade**: TTL dinâmico e extensão de sessão
+- **Controle centralizado**: Session ID gerenciado no Redis
+- **Segurança aprimorada**: Token invalidadado via Redis
+- **Auditoria completa**: Rastreamento de sessão única
 
-### Sessões Redis (Login Múltiplo)
+**Login Múltiplo (SEM session_id):**
 - **Múltiplos dispositivos**: Usuário pode estar logado em vários dispositivos
-- **Controle granular**: Gerenciamento individual de cada sessão
+- **Performance otimizada**: Validação apenas de assinatura e expiração
+- **Independência**: Tokens não afetam uns aos outros
+- **Escalabilidade**: Sem dependência do Redis para validação
+
+### Sessões Redis Flexíveis
+
+**Login Único (com validação por user_id):**
+- **Controle granular**: Invalidação automática de login anterior
+- **Mapeamento inteligente**: `user_session:{user_id} → session_id`
+- **Operações atômicas**: Lua scripts garantem consistência
+- **Auditoria detalhada**: Histórico de sessões por usuário
+
+**Login Múltiplo (sem validação de sessão ativa):**
+- **Flexibilidade máxima**: Múltiplas sessões simultâneas
 - **Experiência do usuário**: Não precisa fazer logout de outros dispositivos
-- **Flexibilidade**: Diferentes TTLs por tipo de dispositivo
-- **Auditoria detalhada**: Histórico completo de logins
+- **Controle individual**: Gerenciamento por session_id específico
+- **TTL independente**: Diferentes tempos de vida por sessão
 
 ### Características Técnicas Avançadas
 - **UUIDv7**: Identificadores únicos com timestamp incorporado
 - **Lua Scripts**: Operações atômicas garantem consistência
 - **Cookies HTTPOnly**: Prevenção de ataques XSS
 - **TTL Configurável**: Tempo de vida das sessões ajustável
-- **Mapeamento Duplo**: Busca rápida por usuário ou sessão
-- **Configuração Dinâmica**: Alternância entre métodos sem restart
+- **Mapeamento Inteligente**: Busca otimizada por usuário ou sessão
+- **Configuração Dinâmica**: Alternância entre métodos e modos sem restart
+- **Validação Condicional**: Comportamento adaptado ao modo de login
 
 ## 🎛️ Configurações Avançadas
 
 ### Modos de Autenticação
 
-**JWT com Session ID:**
+**JWT com Session ID (Login Único):**
 ```env
-app_auth_method=JWT
-login_mode=UNIQUE
+APP_AUTH_METHOD=JWT
+APP_LOGIN_MODE=UNIQUE
 ```
 
-**Sessões Redis:**
+**JWT sem Session ID (Login Múltiplo):**
 ```env
-app_auth_method=COOKIE
-login_mode=MULTIPLE
+APP_AUTH_METHOD=JWT
+APP_LOGIN_MODE=MULTIPLE
+```
+
+**Sessões Redis (Login Único):**
+```env
+APP_AUTH_METHOD=COOKIE
+APP_LOGIN_MODE=UNIQUE
+```
+
+**Sessões Redis (Login Múltiplo):**
+```env
+APP_AUTH_METHOD=COOKIE
+APP_LOGIN_MODE=MULTIPLE
 ```
 
 ### Configurações de Segurança
