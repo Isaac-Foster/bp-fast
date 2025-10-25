@@ -5,6 +5,8 @@ import base64
 import pyotp
 import qrcode
 
+from config import config
+
 
 class OTPManager:
     @staticmethod
@@ -13,16 +15,18 @@ class OTPManager:
         return pyotp.random_base32()
 
     @staticmethod
-    def generate_qr_code(secret: str, name: str, app_name: str) -> str:
+    def generate_qr_code(
+        secret: str, name: str, app_name: str = config.app.name
+    ) -> str:
         """
         Gera a URI padrão (otpauth://...) para ser convertida em QR Code
         e vinculada no Google Authenticator / Authy.
         """
 
         ## default: 30s, 6 dígitos, SHA1
-        uri = pyotp.TOTP(secret, interval=30, digits=6).provisioning_uri(
-            name=name, issuer_name=app_name
-        )
+        uri = pyotp.TOTP(
+            secret, interval=config.totp.interval, digits=config.totp.digits
+        ).provisioning_uri(name=name, issuer_name=app_name)
         image = qrcode.make(uri)
         bio = io.BytesIO()
         image.save(bio, format='PNG')
@@ -36,11 +40,15 @@ class OTPManager:
         valid_window aceita ±1 janela de 30s (ajuda com atraso de relógio).
         """
         totp = pyotp.TOTP(
-            secret, interval=30, digits=6
+            secret, interval=config.totp.interval, digits=config.totp.digits
         )  # default: 30s, 6 dígitos, SHA1
-        return totp.verify(otp_code)
+        return totp.verify(otp_code, window=config.totp.window)
 
     @staticmethod
     def generate_current_otp(secret: str) -> str:
         """Opcional: gera o OTP atual (útil para teste)."""
         return pyotp.TOTP(secret, interval=30, digits=6).now()
+
+
+# singleton
+otp_manager = OTPManager()

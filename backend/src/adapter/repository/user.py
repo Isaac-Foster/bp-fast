@@ -1,3 +1,4 @@
+from pydantic import BaseModel
 from sqlalchemy import select, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -22,21 +23,21 @@ class UserRepository(RepositoryPort):
         await self.session.refresh(model)
         return model
 
-    async def update(self, _id, data):
+    async def update(self, _id, data: dict | BaseModel):
+        if isinstance(data, BaseModel):
+            data = data.model_dump()
+
         not_allowed = [
-            'password',
-            'secret_otp',
-            'logged_in',
-            'blocked',
-            'attempts',
-            'last_login',
             'created_at',
             'updated_at',
         ]
-        model = await self.session.get(self.model, _id)
-        for k, v in data.model_dump().items():
+
+        model = await self.get(_id)
+
+        for k, v in data.items():
             if k in not_allowed:
                 continue
+            setattr(model, k, v)
 
         await self.session.commit()
         await self.session.refresh(model)

@@ -45,7 +45,19 @@ class Redis(BaseModel):
     host: str = Field(..., alias='redis_host')
     port: str = Field(..., alias='redis_port')
     db: int = Field(..., alias='redis_db')
-    ttl: int = Field(..., alias='ttl_redis')
+    ttl: int = Field(..., alias='redis_ttl')
+
+
+class AppConfig(BaseModel):
+    name: str = Field(..., alias='app_name')
+    version: str = Field(..., alias='app_version')
+    auth_method: str = Field(..., alias='app_auth_method')
+
+
+class TOTP(BaseModel):
+    interval: int = Field(..., alias='totp_interval')
+    digits: int = Field(..., alias='totp_digits')
+    window: int = Field(..., alias='totp_window')
 
 
 class Config(BaseModel):
@@ -53,6 +65,8 @@ class Config(BaseModel):
     postgres: Postgres = None
     jwt: JWT = None
     redis: Redis = None
+    app: AppConfig = None
+    totp: TOTP = None
 
     def model_post_init(self, __context):
         load_env_file = LoadEnvFile()
@@ -60,6 +74,8 @@ class Config(BaseModel):
         self.postgres = Postgres(**load_env_file.model_dump())
         self.jwt = JWT(**load_env_file.model_dump())
         self.redis = Redis(**load_env_file.model_dump())
+        self.app = AppConfig(**load_env_file.model_dump())
+        self.totp = TOTP(**load_env_file.model_dump())
 
 
 # singleton leitura unica do .env
@@ -68,7 +84,7 @@ config = Config()
 
 logger.add(
     'logs/app.log',
-    # level='WARNING', # -> trigger event LEVEL for register.
+    level='WARNING',  # -> trigger event LEVEL for register.
     rotation='2 MB',
     compression='zip',
     retention='1 week',

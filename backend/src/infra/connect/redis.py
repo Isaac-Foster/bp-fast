@@ -2,9 +2,7 @@ import redis.asyncio as redis
 import json
 import uuid
 
-from fastapi import Request, HTTPException
-from functools import wraps
-from typing import Callable, Dict, Any, Optional
+from typing import Dict, Any, Optional
 
 
 class RedisManager:
@@ -276,10 +274,10 @@ class SessionManager(RedisManager):
 redis_manager = SessionManager()
 
 
-def login_required(f: Callable):
-    """
+""" def login_required(f: Callable):
+    '''
     Decorator para verificar se o usuário está autenticado
-    """
+    '''
 
     @wraps(f)
     async def wrapper(*args, **kwargs):
@@ -311,3 +309,4 @@ def login_required(f: Callable):
         return await f(*args, **kwargs)
 
     return wrapper
+ """
