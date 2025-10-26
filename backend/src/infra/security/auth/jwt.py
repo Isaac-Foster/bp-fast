@@ -9,12 +9,12 @@ from config import config
 from src.infra.connect.sql import get_session
 from src.infra.connect.redis import session_manager
 
-from src.adapter.repository.user import UserRepository, UserModel
+from src.adapter.repository.user import UserRepository
 
 
 @dataclass
 class AuthResponse:
-    user: UserModel
+    user: dict
     payload: dict
 
 
@@ -81,6 +81,10 @@ async def get_current_user_jwt(
         user.allowed = False
         await repository.session.commit()
         await repository.session.refresh(user)
+        if config.app.login_mode == 'UNIQUE':
+            await session_manager.delete_session(
+                session_id=payload['session_id']
+            )
         raise HTTPException(status_code=401, detail='Token expired')
     except jwt.exceptions.InvalidTokenError:
         raise HTTPException(status_code=401, detail='Invalid token')
@@ -88,7 +92,6 @@ async def get_current_user_jwt(
         raise HTTPException(status_code=401, detail=str(e))
 
     user = await repository.get(payload['id'])
-
     return AuthResponse(user=user, payload=payload)
 
 

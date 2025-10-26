@@ -42,9 +42,11 @@ def _ensure_png_bytes(image_any) -> bytes:
 async def create_auth(data, response: Response, sm: session_manager):
     """Função para criar uma autenticação"""
     if config.app.auth_method == 'JWT':
-        exp = datetime.now(tz=ZoneInfo('UTC')) + timedelta(
-            seconds=config.jwt.ttl
-        )
+        exp = (
+            datetime.now(tz=ZoneInfo('UTC'))
+            + timedelta(seconds=config.jwt.expiration_time)
+        ).timestamp()
+
         payload = dict(
             id=data.id,
             username=data.username,
@@ -57,7 +59,7 @@ async def create_auth(data, response: Response, sm: session_manager):
             payload['session_id'] = session_id
             payload['uid'] = data.id
             await sm.previous_session(session_id, payload, config.redis.ttl)
-        return await jwt_manager.create(payload)
+        return jwt_manager.create(payload)
     else:
         session_id = get_uuid()
 
@@ -118,11 +120,25 @@ class UserController(ControllerPort):
 
         user_model = already_exists[0]
 
+        if user_model.blocked:
+            raise HTTPException(status_code=401, detail='User blocked')
+
+        if user_model.attempts >= 3:
+            user_model.blocked = True
+            await self.session.commit()
+            await self.session.refresh(user_model)
+            raise HTTPException(status_code=401, detail='User blocked')
+
         if not self.pass_manager.verify(user.password, user_model.password):
+            user_model.attempts += 1
+            await self.session.commit()
+            await self.session.refresh(user_model)
             raise HTTPException(
                 status_code=401, detail='Invalid user or password'
             )
+
         create_now = False
+
         if not user_model.secret_otp:
             create_now = True
             logger.info(f'User {user_model} has no secret_otp')
@@ -169,12 +185,16 @@ class UserController(ControllerPort):
                 if not self.otp_manager.verify_code(
                     user_model.secret_otp, totp
                 ):
+                    user_model.attempts += 1
+                    await self.session.commit()
+                    await self.session.refresh(user_model)
                     raise HTTPException(status_code=401, detail='Invalid OTP')
 
                 if not user_model.otp:
                     user_model.otp = True
 
                 user_model.allowed = True
+                user_model.attempts = 0
                 await self.session.commit()
                 await self.session.refresh(user_model)
                 return await create_auth(

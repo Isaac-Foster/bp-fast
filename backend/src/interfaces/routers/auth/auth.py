@@ -28,19 +28,19 @@ def _ensure_png_bytes(image_any) -> bytes:
 async def create(
     request: Request,
     response: Response,
-    auth_response=Depends(get_current_user),
+    auth_response=Depends(get_current_user()),
 ):
-    user, payload = auth_response
-    pass
+    return auth_response
 
 
 @router.get('/create/qrcode')
 async def create_qrcode(
     request: Request,
     response: Response,
-    auth_response=Depends(get_current_user),
+    auth_response=Depends(get_current_user()),
 ):
-    user, payload = auth_response
+    auth_response = auth_response
+    print(auth_response)
     pass
 
 

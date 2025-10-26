@@ -14,7 +14,10 @@ class UserRepository(RepositoryPort):
         self.schema = SignUp
 
     async def get(self, _id):
-        return await self.session.query(self.model, _id)
+        data = await self.session.execute(
+            select(self.model).where(self.model.id == _id)
+        )
+        return data.scalars().first()
 
     async def create(self, user: SignUp):
         model = self.model(**user.model_dump())
