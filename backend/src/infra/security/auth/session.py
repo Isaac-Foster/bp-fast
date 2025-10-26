@@ -1,9 +1,17 @@
-from fastapi import Depends, HTTPException, Request
+from dataclasses import dataclass
+
 from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import Depends, HTTPException, Request
 
 from src.infra.connect.sql import get_session
-from src.infra.connect.redis import redis_manager
-from src.adapter.repository.user import UserRepository
+from src.infra.connect.redis import session_manager
+from src.adapter.repository.user import UserRepository, UserModel
+
+
+@dataclass
+class SessionData:
+    user: UserModel
+    payload: dict
 
 
 async def get_current_user_cookie(
@@ -11,6 +19,7 @@ async def get_current_user_cookie(
     session: AsyncSession = Depends(get_session),
 ):
     token = request.cookies.get('session')
+
     if not token:
         raise HTTPException(
             status_code=401, detail='Could not validate credentials'
@@ -18,12 +27,13 @@ async def get_current_user_cookie(
 
     repository = UserRepository(session)
 
-    _id = await redis_manager.get_session_data(token)
+    data = await session_manager.get_session_data(token)
 
-    if not _id:
+    if not data:
         raise HTTPException(
             status_code=401, detail='Could not validate credentials'
         )
-    user = await repository.get(_id)
 
-    return user
+    user = await repository.get(_id=data['uid'])
+
+    return user, data

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Request, Response
+from fastapi import APIRouter, Depends, Request, Response, Query
 
 from src.infra.security.auth import get_current_user
 
@@ -28,8 +28,9 @@ def _ensure_png_bytes(image_any) -> bytes:
 async def create(
     request: Request,
     response: Response,
-    data=Depends(get_current_user),
+    auth_response=Depends(get_current_user),
 ):
+    user, payload = auth_response
     pass
 
 
@@ -37,16 +38,33 @@ async def create(
 async def create_qrcode(
     request: Request,
     response: Response,
-    data=Depends(get_current_user),
+    auth_response=Depends(get_current_user),
 ):
+    user, payload = auth_response
     pass
 
 
-""" @router.post('/verify')
+@router.get('/verify')
 async def verify(
     request: Request,
     response: Response,
-    opt_code: Query(str, pattern=r'^\d{6}$'),
+    # feature_flag: str = Query(None),
+    # operation_id: str = Query(None),
+    opt_code: str = Query(None, pattern=r'^\d{6}$'),
+    auth_response=Depends(get_current_user),
 ):
+    """
+    Verifica o código OTP
+    Extra:
+    recurso futuro/citaçao de uso
+        feature_flag:
+            ditara em na tabela a qual recurso pertence a solicitaçao DE 2fa
+            ex: 'login', 'register', 'change_password', 'change_email', 'transfer'
+        operation_id:
+            ditara o id da operação que está sendo realizada
+            ex: 1
+        conjunto de fields buscados em conjunto
+        para aprovar ou rejeitar a solicitação
+    """
+    user, payload = auth_response
     pass
- """

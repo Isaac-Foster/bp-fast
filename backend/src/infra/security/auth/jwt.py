@@ -1,22 +1,25 @@
+from dataclasses import dataclass
+
 import jwt
-from pydantic import BaseModel
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config import config
 from src.infra.connect.sql import get_session
+from src.infra.connect.redis import session_manager
 
-# from src.infra.security.hashpass import hash_pass_manager
-from src.adapter.repository.user import UserRepository
+from src.adapter.repository.user import UserRepository, UserModel
 
 
-class AuthResponse(BaseModel):
-    user: BaseModel
+@dataclass
+class AuthResponse:
+    user: UserModel
     payload: dict
 
 
-class Authorization(BaseModel):
+@dataclass
+class Authorization:
     access_token: str
     token_type: str = 'Bearer'
     expires_at: float = 0
@@ -64,6 +67,14 @@ async def get_current_user_jwt(
 
     try:
         payload = jwt_manager.validate(token)
+
+        if config.app.login_mode == 'UNIQUE':
+            is_already = await session_manager.get_session_data(
+                session_id=payload['session_id']
+            )
+            if not is_already:
+                raise HTTPException(status_code=401, detail='Unauthorized')
+
     except jwt.exceptions.ExpiredSignatureError:
         payload = jwt_manager.decode_ignore_exp(token)
         user = await repository.get(payload['id'])

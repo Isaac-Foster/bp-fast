@@ -32,17 +32,17 @@ async def create_auth(data, response: Response, sm):
         if config.app.login_mode == 'UNIQUE':
             session_id = get_uuid()
             payload['session_id'] = session_id
-            await sm.previous_session(session_id, data.id, config.jwt.ttl)
+            await sm.previous_session(session_id, payload, config.jwt.ttl)
 
         return await jwt_manager.create(payload)
     else:
         session_id = get_uuid()
 
-        data = {
-            'uid': data.id,
-            'session_id': session_id,
-            'ttl': config.jwt.ttl,
-        }
+        data = dict(
+            id=data.id,
+            session_id=session_id,
+            ttl=config.jwt.ttl,
+        )
 
         if config.app.login_mode == 'UNIQUE':
             await sm.previous_session(session_id, data, config.jwt.ttl)
@@ -87,7 +87,18 @@ class UserController(ControllerPort):
         return user
 
     async def signin(self, user: SignUp, totp: str = None):
-        pass
+        already_exists = await self.repository.find(user)
+
+        if not already_exists:
+            raise HTTPException(status_code=404, detail='User not found')
+
+        user_model = already_exists[0]
+
+        if not self.pass_manager.verify(user.password, user_model.password):
+            raise HTTPException(
+                status_code=401, detail='Invalid user or password'
+            )
+        return user_model
 
     async def get(self, _id):
         return await self.repository.get(_id)

@@ -47,7 +47,7 @@ class UserRepository(RepositoryPort):
         data = await self.session.execute(
             select(self.model).where(
                 or_(
-                    self.model.email == data.email,
+                    self.model.email == data.username,
                     self.model.username == data.username,
                 )
             )
