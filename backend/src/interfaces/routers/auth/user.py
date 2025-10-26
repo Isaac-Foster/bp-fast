@@ -15,7 +15,6 @@ async def signup(
     response: Response,
     session: AsyncSession = Depends(get_session),
 ):
-    logger.info('signup', data=data)
     user_controller = UserController(session, response)
     response = await user_controller.create(data)
     logger.info('signup response', response=response)
@@ -29,9 +28,8 @@ async def signin(
     totp: str = Query(default=None, pattern=r'^\d{6}$'),
     session: AsyncSession = Depends(get_session),
 ):
-    logger.info(f'signin {data} {totp}')
+    logger.info(f'signin {totp}')
     user_controller = UserController(session, response)
 
     response = await user_controller.signin(data, totp)
-    logger.info(f'signin response {response}')
     return response
