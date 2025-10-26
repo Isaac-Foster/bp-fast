@@ -1,6 +1,3 @@
-from zoneinfo import ZoneInfo
-from datetime import datetime, timedelta
-
 import jwt
 from pydantic import BaseModel
 from fastapi import Depends, HTTPException
@@ -30,19 +27,10 @@ class JWTManager:
         pass
 
     def create(self, data: dict) -> Authorization:
-        to_encode = data.copy()
-
-        to_encode.update(
-            {
-                'exp': datetime.now(tz=ZoneInfo('UTC'))
-                + timedelta(minutes=config.jwt.expiration_time).timestamp()
-            }
-        )
-
         token = jwt.encode(
-            to_encode, config.jwt.secret, algorithm=config.jwt.algorithm
+            data, config.jwt.secret, algorithm=config.jwt.algorithm
         )
-        return Authorization(access_token=token, expires_at=to_encode['exp'])
+        return Authorization(access_token=token, expires_at=data['exp'])
 
     def validate(self, token: str) -> dict:
         data = jwt.decode(
@@ -60,6 +48,9 @@ class JWTManager:
         return data
 
 
+jwt_manager = JWTManager()
+
+
 async def get_current_user_jwt(
     bearer: str = Depends(HTTPBearer()),
     session: AsyncSession = Depends(get_session),
@@ -72,9 +63,9 @@ async def get_current_user_jwt(
     token = bearer.credentials
 
     try:
-        payload = JWTManager().validate(token)
+        payload = jwt_manager.validate(token)
     except jwt.exceptions.ExpiredSignatureError:
-        payload = JWTManager().decode_ignore_exp(token)
+        payload = jwt_manager.decode_ignore_exp(token)
         user = await repository.get(payload['id'])
         user.allowed = False
         await repository.session.commit()

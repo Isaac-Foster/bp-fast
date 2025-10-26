@@ -1,5 +1,10 @@
 import re
 import string
+from uuid6 import uuid7
+
+
+def get_uuid():
+    return str(uuid7())
 
 
 def is_strong_pass(

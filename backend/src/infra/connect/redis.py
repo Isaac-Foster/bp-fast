@@ -1,8 +1,8 @@
 import redis.asyncio as redis
 import json
-import uuid
 
 from typing import Dict, Any, Optional
+from config import config
 
 
 class RedisManager:
@@ -80,6 +80,19 @@ class SessionManager(RedisManager):
         local session_data = ARGV[3]
         local ttl = tonumber(ARGV[4])
         
+        -- Cria nova sessão
+        redis.call('SETEX', 'session:' .. session_id, ttl, session_data)
+        redis.call('SETEX', 'user_session:' .. uid, ttl, session_id)
+        
+        return session_id
+        """
+
+        self.previous_session_script = """
+        local uid = ARGV[1]
+        local session_id = ARGV[2]
+        local session_data = ARGV[3]
+        local ttl = tonumber(ARGV[4])
+        
         -- Remove sessão anterior se existir
         local old_session = redis.call('GET', 'user_session:' .. uid)
         if old_session then
@@ -92,23 +105,6 @@ class SessionManager(RedisManager):
         redis.call('SETEX', 'user_session:' .. uid, ttl, session_id)
         
         return session_id
-        """
-
-        # Script Lua para logout atômico
-        self.logout_script = """
-        local uid = ARGV[1]
-        
-        -- Busca session_id ativo
-        local session_id = redis.call('GET', 'user_session:' .. uid)
-        
-        if session_id then
-            -- Remove ambas as chaves
-            redis.call('DEL', 'session:' .. session_id)
-            redis.call('DEL', 'user_session:' .. uid)
-            return 1
-        end
-        
-        return 0
         """
 
         # Script Lua para logout por session_id
@@ -156,31 +152,32 @@ class SessionManager(RedisManager):
         return 0
         """
 
-    async def create_session(
-        self, uid: str, data: Dict[str, Any], ttl: int = 3600
+    async def create(
+        self,
+        session_id: str,
+        data: Dict[str, Any],
+        ttl: int = config.redis.ttl,
     ) -> str:
         """
         Cria uma nova sessão para o usuário de forma atômica usando Lua
         Args:
-            uid: ID do usuário
+            session_id: ID da sessão
             data: Dados do usuário para armazenar na sessão
             ttl: Tempo de vida da sessão em segundos (padrão: 1 hora)
         Returns:
             session_id: UUID v7 gerado para a sessão
         """
-        # Gera um novo session_id usando UUID v7
-        session_id = str(uuid.uuid7())
 
         # Executa script Lua atômico
-        await self.redis.eval(
+        response = await self.redis.eval(
             self.create_session_script,
             0,  # sem chaves
-            uid,
+            data['uid'],
             session_id,
             json.dumps(data),
             str(ttl),
         )
-
+        logger.info(f'Session created: {session_id} {response}')
         return session_id
 
     async def get_session_data(
@@ -269,9 +266,36 @@ class SessionManager(RedisManager):
         )
         return bool(result)
 
+    async def previous_session(
+        self,
+        session_id: str,
+        data: Dict[str, Any],
+        ttl: int = config.redis.ttl,
+    ) -> bool:
+        """
+        Invalida sessão anterior do usuário se modo UNIQUE e cria nova sessão
+        Args:
+            session_id: ID da nova sessão
+            data: Dados do usuário para a nova sessão
+            ttl: Tempo de vida da sessão
+        Returns:
+            True se sessão anterior foi invalidada, False se não havia sessão anterior
+        """
+        response = await self.redis.eval(
+            self.previous_session_script,
+            0,  # sem chaves
+            data['uid'],
+            session_id,
+            json.dumps(data),
+            str(ttl),
+        )
+        logger.info(f'Session created: {session_id} {response}')
+        return response
+
 
 # Instância global do gerenciador Redis
-redis_manager = SessionManager()
+redis_manager = RedisManager()
+session_manager = SessionManager()
 
 
 """ def login_required(f: Callable):
