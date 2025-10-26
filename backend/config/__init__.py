@@ -53,6 +53,7 @@ class AppConfig(BaseModel):
     version: str = Field(..., alias='app_version')
     auth_method: str = Field(..., alias='app_auth_method')
     login_mode: str = Field(..., alias='app_login_mode')
+    env: str = Field(..., alias='app_env')
 
 
 class TOTP(BaseModel):

@@ -42,7 +42,7 @@ class OTPManager:
         totp = pyotp.TOTP(
             secret, interval=config.totp.interval, digits=config.totp.digits
         )  # default: 30s, 6 dígitos, SHA1
-        return totp.verify(otp_code, window=config.totp.window)
+        return totp.verify(otp_code, valid_window=config.totp.window)
 
     @staticmethod
     def generate_current_otp(secret: str) -> str:

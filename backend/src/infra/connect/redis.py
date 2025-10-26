@@ -1,8 +1,9 @@
-import redis.asyncio as redis
 import json
-
 from typing import Dict, Any, Optional
-from config import config
+
+import redis.asyncio as redis
+
+from config import config, logger
 
 
 class RedisManager:
