@@ -4,7 +4,7 @@ from fastapi import APIRouter, Query, Depends, Response
 from config import logger
 from src.infra.connect.sql import get_session
 from src.interfaces.schema.auth import SignUp, SignIn
-from src.adapter.controllers.user import UserController
+from src.adapter.controller.user import UserController
 
 router = APIRouter()
 

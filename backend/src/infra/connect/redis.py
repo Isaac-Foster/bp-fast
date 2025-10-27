@@ -76,34 +76,34 @@ class SessionManager(RedisManager):
 
         # Script Lua para criação atômica de sessão
         self.create_session_script = """
-        local uid = ARGV[1]
+        local id = ARGV[1]
         local session_id = ARGV[2]
         local session_data = ARGV[3]
         local ttl = tonumber(ARGV[4])
         
         -- Cria nova sessão
         redis.call('SETEX', 'session:' .. session_id, ttl, session_data)
-        redis.call('SETEX', 'user_session:' .. uid, ttl, session_id)
+        redis.call('SETEX', 'user_session:' .. id, ttl, session_id)
         
         return session_id
         """
 
         self.previous_session_script = """
-        local uid = ARGV[1]
+        local id = ARGV[1]
         local session_id = ARGV[2]
         local session_data = ARGV[3]
         local ttl = tonumber(ARGV[4])
         
         -- Remove sessão anterior se existir
-        local old_session = redis.call('GET', 'user_session:' .. uid)
+        local old_session = redis.call('GET', 'user_session:' .. id)
         if old_session then
             redis.call('DEL', 'session:' .. old_session)
-            redis.call('DEL', 'user_session:' .. uid)
+            redis.call('DEL', 'user_session:' .. id)
         end
         
         -- Cria nova sessão
         redis.call('SETEX', 'session:' .. session_id, ttl, session_data)
-        redis.call('SETEX', 'user_session:' .. uid, ttl, session_id)
+        redis.call('SETEX', 'user_session:' .. id, ttl, session_id)
         
         return session_id
         """
@@ -117,12 +117,12 @@ class SessionManager(RedisManager):
         
         if session_data then
             local data = cjson.decode(session_data)
-            local uid = data.user_id
+            local id = data.user_id
             
-            if uid then
+            if id then
                 -- Remove ambas as chaves
                 redis.call('DEL', 'session:' .. session_id)
-                redis.call('DEL', 'user_session:' .. uid)
+                redis.call('DEL', 'user_session:' .. id)
                 return 1
             end
         end
@@ -140,12 +140,12 @@ class SessionManager(RedisManager):
         
         if session_data then
             local data = cjson.decode(session_data)
-            local uid = data.user_id
+            local id = data.user_id
             
-            if uid then
+            if id then
                 -- Estende ambas as chaves
                 redis.call('EXPIRE', 'session:' .. session_id, ttl)
-                redis.call('EXPIRE', 'user_session:' .. uid, ttl)
+                redis.call('EXPIRE', 'user_session:' .. id, ttl)
                 return 1
             end
         end
@@ -166,14 +166,14 @@ class SessionManager(RedisManager):
             data: Dados do usuário para armazenar na sessão
             ttl: Tempo de vida da sessão em segundos (padrão: 1 hora)
         Returns:
-            session_id: UUID v7 gerado para a sessão
+            session_id: Uid v7 gerado para a sessão
         """
 
         # Executa script Lua atômico
         response = await self.redis.eval(
             self.create_session_script,
             0,  # sem chaves
-            data['uid'],
+            data['id'],
             session_id,
             json.dumps(data),
             str(ttl),
@@ -285,7 +285,7 @@ class SessionManager(RedisManager):
         response = await self.redis.eval(
             self.previous_session_script,
             0,  # sem chaves
-            data['uid'],
+            data['id'],
             session_id,
             json.dumps(data),
             str(ttl),

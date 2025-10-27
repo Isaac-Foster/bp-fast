@@ -59,14 +59,13 @@ async def create_auth(data, response: Response, sm: session_manager):
         if config.app.login_mode == 'UNIQUE':
             session_id = get_uuid()
             payload['session_id'] = session_id
-            payload['uid'] = data.id
             await sm.previous_session(session_id, payload, config.redis.ttl)
         return jwt_manager.create(payload)
     else:
         session_id = get_uuid()
 
         data = dict(
-            uid=data.id,
+            id=data.id,
             session_id=session_id,
             ttl=config.redis.ttl,
         )
