@@ -27,8 +27,11 @@ URI = URL.create(
 # ---- ENGINE & SESSION ---------------------------------------
 engine = create_async_engine(
     url=URI,
-    echo=False,  # mude para True para ver SQL no console
+    # echo=True,  # mude para True para ver SQL no console
     pool_pre_ping=True,  # evita conexões mortas
+    pool_size=20,
+    max_overflow=10,  # Conexões extras que podem ser criadas além do pool_size
+    pool_timeout=40,  # Tempo de espera por uma conexão em segundos
     pool_recycle=1800,  # reaproveita conexões a cada 30min
     future=True,
 )

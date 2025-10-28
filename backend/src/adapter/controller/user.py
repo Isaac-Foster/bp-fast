@@ -1,5 +1,6 @@
 import io
 import base64
+from http import HTTPStatus
 from zoneinfo import ZoneInfo
 from datetime import datetime, timedelta
 
@@ -195,6 +196,7 @@ class UserController(ControllerPort):
         user.password = self.pass_manager.hash(user.password)
         user = await self.repository.create(user)
         logger.success(f'User created {user}')
+        self.response.status_code = HTTPStatus.CREATED
         return user
 
     async def signin(self, user: SignUp, totp: str = None):
@@ -210,13 +212,16 @@ class UserController(ControllerPort):
         await self._validate_password(user, user_model)
 
         # 4. Setup OTP inicial se necessário
-        if not user_model.secret_otp:
-            await self._setup_initial_otp(user_model)
-            return await self._generate_otp_qr_response(user_model)
+        if not user_model.otp:
+            if not user_model.secret_otp:
+                await self._setup_initial_otp(user_model)
+        return await self._generate_otp_qr_response(user_model)
 
         # 5. Verificar se precisa validar OTP
         if not user_model.otp and totp is None:
-            raise HTTPException(status_code=401, detail='OTP not enabled')
+            raise HTTPException(
+                status_code=HTTPStatus.UNAUTHORIZED, detail='OTP not enabled'
+            )
 
         # 6. Validar código OTP
         if totp:
@@ -237,6 +242,8 @@ class UserController(ControllerPort):
         model = await self.repository.get(_id)
 
         if not model:
-            raise HTTPException(status_code=404, detail='User not found')
+            raise HTTPException(
+                status_code=HTTPStatus.NOT_FOUND, detail='User not found'
+            )
 
         self.otp_manager.generate_current_otp(model.otp_secret)
