@@ -1,0 +1,24 @@
+# .pre-commit-config.yaml
+repos:
+  - repo: local
+    hooks:
+      - id: ruff-lint
+        name: Ruff Lint
+        entry: task lint
+        language: system
+        types: [python]
+        pass_filenames: false
+
+      - id: ruff-format
+        name: Ruff Format
+        entry: task format
+        language: system
+        types: [python]
+        pass_filenames: false
+
+      - id: run-tests
+        name: Run Pytest
+        entry: task test
+        language: system
+        types: [python]
+        pass_filenames: false
