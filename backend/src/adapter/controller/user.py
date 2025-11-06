@@ -178,6 +178,7 @@ class UserController(ControllerPort):
 
         if not user_model.otp:
             user_model.otp = True
+            await save_and_refresh(self.session, user_model)
 
     async def _finalize_login(self, user_model):
         """Finaliza login resetando tentativas e habilitando usuário"""
@@ -195,6 +196,7 @@ class UserController(ControllerPort):
         user.password = self.pass_manager.hash(user.password)
         user = await self.repository.create(user)
         logger.success(f'User created {user}')
+        self.response.status_code = HTTPStatus.CREATED
         return user
 
     async def signin(self, user: SignUp, totp: str = None):
@@ -210,13 +212,16 @@ class UserController(ControllerPort):
         await self._validate_password(user, user_model)
 
         # 4. Setup OTP inicial se necessário
-        if not user_model.secret_otp:
-            await self._setup_initial_otp(user_model)
+        if not user_model.otp and not totp:
+            if not user_model.secret_otp:
+                await self._setup_initial_otp(user_model)
             return await self._generate_otp_qr_response(user_model)
 
         # 5. Verificar se precisa validar OTP
         if not user_model.otp and totp is None:
-            raise HTTPException(status_code=401, detail='OTP not enabled')
+            raise HTTPException(
+                status_code=HTTPStatus.UNAUTHORIZED, detail='OTP not enabled'
+            )
 
         # 6. Validar código OTP
         if totp:
