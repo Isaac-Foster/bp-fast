@@ -9,7 +9,7 @@ services:
     ports:
       - "${POSTGRES_DB_PORT}:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_DB_USER} -d ${POSTGRES_DB_NAME}"]
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -p 5432 -U $${POSTGRES_DB_USER:-postgres} -d $${POSTGRES_DB_NAME:-postgres}"]
       interval: ${HEALTHCHECK_INTERVAL}      # tempo entre verificações
       timeout: ${HEALTHCHECK_TIMEOUT}        # tempo limite de cada verificação
       retries: ${HEALTHCHECK_RETRIES}         # número de tentativas antes de marcar como "unhealthy"
