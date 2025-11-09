@@ -1,7 +1,7 @@
 services:
   postgres:
     image: postgres:15
-    container_name: postgres
+    container_name: bp-fast-postgres
     environment:
       POSTGRES_PASSWORD: ${POSTGRES_DB_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB_NAME}
@@ -14,9 +14,12 @@ services:
       timeout: ${HEALTHCHECK_TIMEOUT}        # tempo limite de cada verificação
       retries: ${HEALTHCHECK_RETRIES}         # número de tentativas antes de marcar como "unhealthy"
       start_period: ${HEALTHCHECK_START_PERIOD}  # tempo de espera antes de iniciar os checks (PostgreSQL demora a iniciar)
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
       
   redis:
     image: redis
+    container_name: bp-fast-redis
     ports:
       - "${REDIS_PORT:-6379}:6379"
     healthcheck:
@@ -25,3 +28,34 @@ services:
       timeout: ${HEALTHCHECK_TIMEOUT:-5s}
       retries: ${HEALTHCHECK_RETRIES:-5}
       start_period: ${HEALTHCHECK_START_PERIOD:-30s}
+    volumes:
+      - redis_data:/data
+
+  backend:
+    build:
+      context: ..  # Contexto é a raiz do projeto (onde está pyproject.toml)
+      dockerfile: backend/Dockerfile
+    container_name: bp-fast-backend
+    ports:
+      - "${BACKEND_PORT:-3000}:3000"
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      # Monta o diretório de logs para persistência
+      - ./logs:/app/backend/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; s=socket.socket(); s.settimeout(5); s.connect(('localhost', 3000)); s.close()"]
+      interval: 30s
+      timeout: 10s
+      start_period: 40s
+      retries: 3
+
+volumes:
+  postgres_data:
+  redis_data:

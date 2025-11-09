@@ -1,0 +1,56 @@
+# Arquivos e diretórios a serem ignorados no build do Docker
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+ENV/
+env/
+
+# Testes e cobertura
+.pytest_cache/
+.coverage
+htmlcov/
+*.cover
+.hypothesis/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Git
+.git/
+.gitignore
+
+# Logs
+*.log
+logs/
+
+# Arquivos de ambiente (devem ser fornecidos em runtime)
+.env
+.env.local
+.env.*.local
+
+# Node (frontend)
+node_modules/
+frontend/
+
+# Outros
+.DS_Store
+*.excalidraw
+TODO.md
+README.md
+
+# Arquivos de lock (uv.lock será copiado explicitamente)
+# Mas podemos ignorar outros
+*.lock.bak
