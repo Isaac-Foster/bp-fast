@@ -25,7 +25,21 @@ app.add_middleware(
 
 @app.on_event('startup')
 async def startup_event():
-    await init_db()
+    import asyncio
+
+    # Retry para conectar ao banco (útil quando roda no Docker)
+    max_retries = 5
+    retry_delay = 2
+
+    for attempt in range(max_retries):
+        try:
+            await init_db()
+            break
+        except Exception:
+            if attempt < max_retries - 1:
+                await asyncio.sleep(retry_delay)
+            else:
+                raise
 
 
 configure_routers(app)

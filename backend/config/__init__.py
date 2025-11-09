@@ -6,9 +6,12 @@ from pydantic_settings import BaseSettings
 
 class LoadEnvFile(BaseSettings):
     model_config = {
+        # Carrega o arquivo .env, mas variáveis de ambiente têm prioridade (comportamento padrão)
         'env_file': '.env',
-        'extra': 'allow',
         'env_file_encoding': 'utf-8',
+        'extra': 'allow',
+        'case_sensitive': False,
+        # IMPORTANTE: O pydantic-settings por padrão prioriza variáveis de ambiente sobre o arquivo .env
     }
 
 
@@ -73,13 +76,24 @@ class Config(BaseModel):
     totp: TOTP = None
 
     def model_post_init(self, __context):
+        import os
+
         load_env_file = LoadEnvFile()
-        # self.mysql = Mysql(**load_env_file.model_dump())  # Comentado - usar postgres
-        self.postgres = Postgres(**load_env_file.model_dump())
-        self.jwt = JWT(**load_env_file.model_dump())
-        self.redis = Redis(**load_env_file.model_dump())
-        self.app = AppConfig(**load_env_file.model_dump())
-        self.totp = TOTP(**load_env_file.model_dump())
+        env_dict = load_env_file.model_dump()
+
+        # Sobrescreve com variáveis de ambiente se estiverem definidas (prioridade)
+        # Isso garante que variáveis de ambiente do Docker Compose tenham prioridade
+        if os.getenv('POSTGRES_DB_HOST'):
+            env_dict['postgres_db_host'] = os.getenv('POSTGRES_DB_HOST')
+        if os.getenv('REDIS_HOST'):
+            env_dict['redis_host'] = os.getenv('REDIS_HOST')
+
+        # self.mysql = Mysql(**env_dict)  # Comentado - usar postgres
+        self.postgres = Postgres(**env_dict)
+        self.jwt = JWT(**env_dict)
+        self.redis = Redis(**env_dict)
+        self.app = AppConfig(**env_dict)
+        self.totp = TOTP(**env_dict)
 
 
 # singleton leitura unica do .env

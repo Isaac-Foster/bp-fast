@@ -40,6 +40,13 @@ services:
       - "${BACKEND_PORT:-3000}:3000"
     env_file:
       - .env
+    environment:
+      # IMPORTANTE: Variáveis de ambiente sobrescrevem o arquivo .env
+      # Sobrescreve os hosts para usar os nomes dos serviços Docker
+      # Quando rodar no Docker Compose, usa os nomes dos serviços
+      # Quando rodar localmente, usa localhost (definido no .env)
+      POSTGRES_DB_HOST: postgres  # Nome do serviço no docker-compose
+      REDIS_HOST: redis  # Nome do serviço no docker-compose
     depends_on:
       postgres:
         condition: service_healthy
