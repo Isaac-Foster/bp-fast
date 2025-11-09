@@ -1,4 +1,3 @@
-# backend/src/core/services/user_business_rules.py
 class UserBusinessRules:
     """Regras de negócio do usuário"""
 

@@ -4,7 +4,7 @@ from . import (
     config,  # noqa
 )
 
-from src.infra.connect.sql import register, engine
+from src.infra.database.connect.sql import register, engine
 
 
 async def init_db():

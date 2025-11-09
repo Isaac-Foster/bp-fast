@@ -1,5 +1,7 @@
 import io
+import json
 import base64
+from http import HTTPStatus
 from zoneinfo import ZoneInfo
 from datetime import datetime, timedelta
 
@@ -14,19 +16,19 @@ from config import config, logger
 
 from src.interfaces.schema.auth import SignUp
 from src.infra.security.otp import otp_manager
+from src.core.domain.user import UserBusinessRules
+
 from src.infra.security.auth.jwt import jwt_manager
 from src.core.ports.controllers import ControllerPort
 from src.adapter.repository.user import UserRepository
 from src.infra.security.hashpass import hash_pass_manager
-from src.infra.connect.redis import session_manager, redis_manager
-from src.core.services.user_business_rules import UserBusinessRules
+from src.infra.database.connect.redis import session_manager, redis_manager
 
 
 def _ensure_png_bytes(image_any) -> bytes:
     if isinstance(image_any, bytes):
         return image_any
     if isinstance(image_any, str):
-        # assume base64 sem prefixo data:; se tiver, remova o cabeçalho antes
         return base64.b64decode(image_any)
     try:
         # Tentativa: objeto PIL.Image
@@ -41,7 +43,7 @@ def _ensure_png_bytes(image_any) -> bytes:
     raise TypeError('Formato de imagem não suportado')
 
 
-async def create_auth(data, response: Response, sm: session_manager):
+async def create_auth(user, response: Response, sm: session_manager):
     """Função para criar uma autenticação"""
     if config.app.auth_method == 'JWT':
         exp = (
@@ -50,9 +52,9 @@ async def create_auth(data, response: Response, sm: session_manager):
         ).timestamp()
 
         payload = dict(
-            id=data.id,
-            username=data.username,
-            email=data.email,
+            id=user.id,
+            username=user.username,
+            email=user.email,
             exp=exp,
         )
 
@@ -65,7 +67,7 @@ async def create_auth(data, response: Response, sm: session_manager):
         session_id = get_uuid()
 
         data = dict(
-            id=data.id,
+            id=user.id,
             session_id=session_id,
             ttl=config.redis.ttl,
         )
@@ -74,7 +76,7 @@ async def create_auth(data, response: Response, sm: session_manager):
             await sm.previous_session(session_id, data, config.redis.ttl)
 
         else:
-            await sm.create(session_id, data.id, config.redis.ttl)
+            await sm.create(session_id, user.id, config.redis.ttl)
 
         response.set_cookie(
             key='session',
@@ -87,8 +89,6 @@ async def create_auth(data, response: Response, sm: session_manager):
         # message temporary
         return {'message': 'login successfully'}
 
-    return token
-
 
 class UserController(ControllerPort):
     def __init__(self, session: AsyncSession, response: Response):
@@ -100,8 +100,6 @@ class UserController(ControllerPort):
         self.redis_manager = redis_manager
         self.pass_manager = hash_pass_manager
         self.session_manager = session_manager
-
-    # ====== Métodos Auxiliares ======
 
     async def _validate_user_exists(self, user: SignUp):
         """Valida se usuário existe no banco"""
@@ -116,7 +114,7 @@ class UserController(ControllerPort):
             raise HTTPException(status_code=401, detail='User blocked')
 
     async def _check_attempts_and_block(self, user_model):
-        """Verifica tentativas e bloqueia se necessário"""
+        """Verifica tentativas e bloqueia se necessário (verificar melhor depois sobre)"""
         if UserBusinessRules.should_block_user(user_model.attempts):
             user_model.blocked = True
             await save_and_refresh(self.session, user_model)
@@ -127,8 +125,22 @@ class UserController(ControllerPort):
         if not self.pass_manager.verify(user.password, user_model.password):
             user_model.attempts += 1
             await save_and_refresh(self.session, user_model)
+            rest_attemps = 3 - user_model.attempts
+
+            message = json.dumps(
+                {
+                    'message': 'invalid user or password',
+                    'rest_attemps': rest_attemps,
+                }
+            )
+
+            if rest_attemps == 0:
+                user_model.blocked = True
+                await save_and_refresh(self.session, user_model)
+
             raise HTTPException(
-                status_code=401, detail='Invalid user or password'
+                status_code=401,
+                detail=message,
             )
 
     async def _setup_initial_otp(self, user_model):
@@ -144,9 +156,7 @@ class UserController(ControllerPort):
     ) -> dict | StreamingResponse:
         """Gera resposta com QR code do OTP"""
         image = self.otp_manager.generate_qr_code(
-            secret=user_model.secret_otp,
-            name=user_model.username,
-            app_name='MyApp',
+            secret=user_model.secret_otp, name=user_model.username
         )
         _image = _ensure_png_bytes(image)
         self.response.status_code = 201
@@ -173,8 +183,23 @@ class UserController(ControllerPort):
         """Verifica código OTP"""
         if not self.otp_manager.verify_code(user_model.secret_otp, totp):
             user_model.attempts += 1
+
             await save_and_refresh(self.session, user_model)
-            raise HTTPException(status_code=401, detail='Invalid OTP')
+            rest_attemps = 3 - user_model.attempts
+
+            message = json.dumps(
+                {
+                    'message': 'invalid OTP',
+                    'rest_attemps': rest_attemps,
+                }
+            )
+            if rest_attemps == 0:
+                user_model.blocked = True
+                await save_and_refresh(self.session, user_model)
+            raise HTTPException(
+                status_code=401,
+                detail=message,
+            )
 
         if not user_model.otp:
             user_model.otp = True
@@ -206,7 +231,6 @@ class UserController(ControllerPort):
 
         # 2. Verificar bloqueio
         await self._check_user_blocked(user_model)
-        await self._check_attempts_and_block(user_model)
 
         # 3. Validar senha
         await self._validate_password(user, user_model)
@@ -231,6 +255,8 @@ class UserController(ControllerPort):
         await self._finalize_login(user_model)
 
         # 8. Criar autenticação
+        user_model.logged_in = True
+        await save_and_refresh(self.session, user_model)
         return await create_auth(
             user_model, self.response, self.session_manager
         )

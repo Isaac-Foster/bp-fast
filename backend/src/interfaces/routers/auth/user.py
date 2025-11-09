@@ -2,7 +2,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import APIRouter, Query, Depends, Response
 
 from config import logger
-from src.infra.connect.sql import get_session
+from src.infra.database.connect.sql import get_session
 from src.interfaces.schema.auth import SignUp, SignIn
 from src.adapter.controller.user import UserController
 

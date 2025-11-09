@@ -5,7 +5,7 @@ from sqlalchemy import pool
 
 from alembic import context
 
-from src.infra.model import register
+from src.infra.database.model import register
 
 config = context.config
 config.set_main_option(

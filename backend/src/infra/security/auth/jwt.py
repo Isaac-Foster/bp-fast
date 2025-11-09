@@ -6,8 +6,8 @@ from fastapi.security import HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config import config
-from src.infra.connect.sql import get_session
-from src.infra.connect.redis import session_manager
+from src.infra.database.connect.sql import get_session
+from src.infra.database.connect.redis import session_manager
 
 from src.adapter.repository.user import UserRepository
 
@@ -78,7 +78,7 @@ async def get_current_user_jwt(
     except jwt.exceptions.ExpiredSignatureError:
         payload = jwt_manager.decode_ignore_exp(token)
         user = await repository.get(payload['id'])
-        user.allowed = False
+        user.allowed, user.logged_in = False, False
         await repository.session.commit()
         await repository.session.refresh(user)
         if config.app.login_mode == 'UNIQUE':

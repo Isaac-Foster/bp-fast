@@ -9,7 +9,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column
 
 
-from src.infra.connect.sql import register
+from src.infra.database.connect.sql import register
 
 
 @register.mapped_as_dataclass

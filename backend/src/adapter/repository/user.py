@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from sqlalchemy import select, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.infra.model.user import UserModel
+from src.infra.database.model.user import UserModel
 from src.interfaces.schema.auth import SignUp
 from src.core.ports.repository import RepositoryPort
 

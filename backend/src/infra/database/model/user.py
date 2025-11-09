@@ -9,7 +9,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column
 
 
-from src.infra.connect.sql import register
+from src.infra.database.connect.sql import register
 
 
 @register.mapped_as_dataclass
@@ -20,12 +20,12 @@ class UserModel:
         Integer, primary_key=True, autoincrement=True, init=False
     )
 
-    name: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
-    surname: Mapped[str] = mapped_column(
-        String(64), nullable=False, index=True
+    name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
+    phone: Mapped[str] = mapped_column(String(21), nullable=True, index=True)
+    document: Mapped[str] = mapped_column(
+        String(20), nullable=True, index=True
     )
-    email: Mapped[str] = mapped_column(String(64), unique=True, index=True)
-    phone: Mapped[str] = mapped_column(String(15), nullable=True, index=True)
     username: Mapped[str] = mapped_column(String(64), unique=True, index=True)
     password: Mapped[str] = mapped_column(String(128))
 

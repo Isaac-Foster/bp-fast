@@ -51,6 +51,8 @@ class Redis(BaseModel):
 class AppConfig(BaseModel):
     name: str = Field(..., alias='app_name')
     version: str = Field(..., alias='app_version')
+    description: str = Field(..., alias='app_description')
+    summary: str = Field(..., alias='app_summary')
     auth_method: str = Field(..., alias='app_auth_method')
     login_mode: str = Field(..., alias='app_login_mode')
     env: str = Field(..., alias='app_env')
