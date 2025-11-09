@@ -8,8 +8,9 @@ dependencies = [
     "asyncpg>=0.30.0",
     "bcrypt>=5.0.0",
     "email-validator>=2.0.0",
-    "fastapi>=0.119.0",
+    "fastapi[standard]>=0.119.0",
     "loguru>=0.7.3",
+    "orjson>=3.11.4",
     "pillow>=12.0.0",
     "pre-commit>=4.3.0",
     "psycopg[binary]>=3.2.11",
@@ -23,9 +24,9 @@ dependencies = [
     "python-multipart>=0.0.20",
     "qrcode>=8.2",
     "redis>=6.4.0",
-    #"sqlalchemy[asyncio]>=2.0",
+    "sqlalchemy[asyncio]>=2.0",
     "uuid6>=2025.0.1",
-    "uvicorn>=0.37.0",
+    "uvicorn[standard]>=0.37.0",
 ]
 
 [dependency-groups]
@@ -43,6 +44,7 @@ test = "pytest --cov -vv"
 post_test = "coverage html"
 up = "docker compose up -d"
 down = "docker compose down"
+restart = "task down && task up"
 
 [tool.ruff]
 line-length = 79
