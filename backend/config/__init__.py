@@ -81,8 +81,9 @@ class Config(BaseModel):
         load_env_file = LoadEnvFile()
         env_dict = load_env_file.model_dump()
 
-        # Sobrescreve com variáveis de ambiente se estiverem definidas (prioridade)
-        # Isso garante que variáveis de ambiente do Docker Compose tenham prioridade
+        # Garante que variáveis de ambiente do Docker Compose tenham prioridade sobre o .env
+        # O docker-compose lê o .env via env_file, mas sobrescreve POSTGRES_DB_HOST e REDIS_HOST
+        # na seção environment. Esta lógica garante que essas sobrescritas sejam respeitadas.
         if os.getenv('POSTGRES_DB_HOST'):
             env_dict['postgres_db_host'] = os.getenv('POSTGRES_DB_HOST')
         if os.getenv('REDIS_HOST'):
