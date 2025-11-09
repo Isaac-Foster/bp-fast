@@ -26,6 +26,7 @@ app.add_middleware(
 @app.on_event('startup')
 async def startup_event():
     import asyncio
+    # nota reescrever tudo com composer e dockerfile para deploy coolify
 
     # Retry para conectar ao banco (útil quando roda no Docker)
     max_retries = 5
