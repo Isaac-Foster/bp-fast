@@ -14,7 +14,7 @@ from src.utils import get_uuid
 from src.utils.helpers.sql import save_and_refresh
 from config import config, logger
 
-from src.interfaces.schema.auth import SignUp
+from src.interfaces.schema.auth import SignUp, SignIn
 from src.infra.security.otp import otp_manager
 from src.core.domain.user import UserBusinessRules
 
@@ -101,7 +101,7 @@ class UserController(ControllerPort):
         self.pass_manager = hash_pass_manager
         self.session_manager = session_manager
 
-    async def _validate_user_exists(self, user: SignUp):
+    async def _validate_user_exists(self, user: SignIn):
         """Valida se usuário existe no banco"""
         already_exists = await self.repository.find(user)
         if not already_exists:
@@ -120,7 +120,7 @@ class UserController(ControllerPort):
             await save_and_refresh(self.session, user_model)
             raise HTTPException(status_code=401, detail='User blocked')
 
-    async def _validate_password(self, user: SignUp, user_model):
+    async def _validate_password(self, user: SignIn, user_model):
         """Valida senha e incrementa tentativas se inválida"""
         if not self.pass_manager.verify(user.password, user_model.password):
             user_model.attempts += 1
