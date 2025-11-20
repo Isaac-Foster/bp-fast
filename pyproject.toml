@@ -48,20 +48,22 @@ restart = "task down && task up"
 
 [tool.ruff]
 line-length = 79
-exclude = ["tests", ".venv", ".ruff_cache", "migrations", "pyproject.toml"]
+exclude = ["tests", ".venv", "migrations/", "*.txt", "*.pyc", "*.pyo"]
 
-
-[tool.lint]
+[tool.ruff.lint]
 select = ["E", "F", "Q", "I"]
-fix = true
-unsafe-fixes = false
+ignore = ["E501", "F401", "D100", "D101", "D102", "SIM103", "E701", "E722", "F821"]
 
+fixable = ["ALL"]
+unfixable = []
+
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[tool.ruff.lint.flake8-quotes]
+inline-quotes = "single"
 
 [tool.ruff.format]
 quote-style = "single"
-
-[tool.ruff.lint]
-ignore = ["SIM103", "E701", "E722", "F821"]
 
 
 [tool.pytest.ini_options]
