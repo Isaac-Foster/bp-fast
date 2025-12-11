@@ -12,7 +12,7 @@ services:
       - "${POSTGRES_DB_PORT}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -p 5432 -U $${POSTGRES_DB_USER:-postgres} -d $${POSTGRES_DB_NAME:-postgres}"]
-      interval: ${HEALTHCHECK_INTERVAL:-10s}          # default se não vier do Coolify
+      interval: ${HEALTHCHECK_INTERVAL:-10s}
       timeout: ${HEALTHCHECK_TIMEOUT:-5s}
       retries: ${HEALTHCHECK_RETRIES:-5}
       start_period: ${HEALTHCHECK_START_PERIOD:-30s}
@@ -35,7 +35,7 @@ services:
 
   backend:
     build:
-      context: ..                    # raiz do projeto (onde está pyproject.toml)
+      context: .                  # raiz do projeto
       dockerfile: backend/Dockerfile
     container_name: bp-fast-backend
     ports:
@@ -43,9 +43,8 @@ services:
     env_file:
       - .env
     environment:
-      # Sobrescreve host/porta para uso dentro da rede Docker
-      POSTGRES_DB_HOST: postgres     # serviço do Docker
-      POSTGRES_DB_PORT: 5432         # porta interna do container postgres
+      POSTGRES_DB_HOST: postgres
+      POSTGRES_DB_PORT: 5432
       REDIS_HOST: redis
     depends_on:
       postgres:
@@ -53,7 +52,7 @@ services:
       redis:
         condition: service_healthy
     volumes:
-      - ./logs:/app/backend/logs
+      - ./backend/logs:/app/backend/logs
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import socket; s=socket.socket(); s.settimeout(5); s.connect(('localhost', 3000)); s.close()"]
