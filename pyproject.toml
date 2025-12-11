@@ -48,7 +48,7 @@ restart = "task down && task up"
 
 [tool.ruff]
 line-length = 79
-exclude = ["tests", ".venv", "migrations/", "*.txt", "*.pyc", "*.pyo"]
+exclude = ["tests", ".venv/*", "migrations/", "*.txt", "*.pyc", "*.pyo"]
 
 [tool.ruff.lint]
 select = ["E", "F", "Q", "I"]
