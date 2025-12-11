@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.responses import ORJSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
-from config import config
+from config import config, logger
 from src.infra.database.model import init_db
 from src.interfaces.routers import configure_routers
 
