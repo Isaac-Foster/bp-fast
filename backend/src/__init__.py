@@ -33,6 +33,7 @@ async def startup_event():
     retry_delay = 2
 
     for attempt in range(max_retries):
+        logger.debug(config.redis)
         try:
             await init_db()
             break
