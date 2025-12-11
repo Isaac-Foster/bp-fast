@@ -12,10 +12,10 @@ services:
       - "${POSTGRES_DB_PORT}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -p 5432 -U $${POSTGRES_DB_USER:-postgres} -d $${POSTGRES_DB_NAME:-postgres}"]
-      interval: ${HEALTHCHECK_INTERVAL}      # tempo entre verificações
-      timeout: ${HEALTHCHECK_TIMEOUT}        # tempo limite de cada verificação
-      retries: ${HEALTHCHECK_RETRIES}         # número de tentativas antes de marcar como "unhealthy"
-      start_period: ${HEALTHCHECK_START_PERIOD}  # tempo de espera antes de iniciar os checks (PostgreSQL demora a iniciar)
+      interval: ${HEALTHCHECK_INTERVAL:-10s}          # default se não vier do Coolify
+      timeout: ${HEALTHCHECK_TIMEOUT:-5s}
+      retries: ${HEALTHCHECK_RETRIES:-5}
+      start_period: ${HEALTHCHECK_START_PERIOD:-30s}
     volumes:
       - postgres_data:/var/lib/postgresql/data
       
@@ -35,27 +35,24 @@ services:
 
   backend:
     build:
-      context: ..  # Contexto é a raiz do projeto (onde está pyproject.toml)
+      context: ..                    # raiz do projeto (onde está pyproject.toml)
       dockerfile: backend/Dockerfile
     container_name: bp-fast-backend
     ports:
       - "${BACKEND_PORT:-3000}:3000"
     env_file:
-      - .env  # Carrega todas as variáveis do arquivo .env
+      - .env
     environment:
-      # Sobrescreve apenas os hosts para usar os nomes dos serviços Docker
-      # Todas as outras variáveis vêm do arquivo .env
-      # Quando rodar localmente (sem Docker), o .env usa 'localhost'
-      # Quando rodar no Docker, estas variáveis sobrescrevem para os nomes dos serviços
-      POSTGRES_DB_HOST: postgres  # Nome do serviço no docker-compose (sobrescreve o .env)
-      REDIS_HOST: redis  # Nome do serviço no docker-compose (sobrescreve o .env)
+      # Sobrescreve host/porta para uso dentro da rede Docker
+      POSTGRES_DB_HOST: postgres     # serviço do Docker
+      POSTGRES_DB_PORT: 5432         # porta interna do container postgres
+      REDIS_HOST: redis
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
     volumes:
-      # Monta o diretório de logs para persistência
       - ./logs:/app/backend/logs
     restart: unless-stopped
     healthcheck:
