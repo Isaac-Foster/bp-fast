@@ -295,43 +295,9 @@ class SessionManager(RedisManager):
 
 
 # Instância global do gerenciador Redis
-redis_manager = RedisManager()
+redis_manager = RedisManager(
+    host=config.redis.host,
+    port= config.redis.port,
+    db=config.redis.db,
+)
 session_manager = SessionManager()
-
-
-""" def login_required(f: Callable):
-    '''
-    Decorator para verificar se o usuário está autenticado
-    '''
-
-    @wraps(f)
-    async def wrapper(*args, **kwargs):
-        request: Request = kwargs.get('request')
-
-        if not request:
-            raise HTTPException(
-                status_code=401, detail='Request não encontrada'
-            )
-
-        session_id = request.cookies.get('session')
-
-        if not session_id:
-            raise HTTPException(
-                status_code=401, detail='Sessão não encontrada'
-            )
-
-        # Valida a sessão
-        user_data = await redis_manager.validate_session(session_id)
-
-        if not user_data:
-            raise HTTPException(
-                status_code=401, detail='Sessão inválida ou expirada'
-            )
-
-        # Adiciona os dados do usuário ao request para uso posterior
-        request.state.user_data = user_data
-
-        return await f(*args, **kwargs)
-
-    return wrapper
- """
