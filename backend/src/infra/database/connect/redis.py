@@ -300,4 +300,5 @@ redis_manager = RedisManager(
     port= config.redis.port,
     db=config.redis.db,
 )
+print(config.redis)
 session_manager = SessionManager()
