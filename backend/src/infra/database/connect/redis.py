@@ -13,7 +13,6 @@ class RedisManager:
 
     def __init__(self, config: Redis):
         self.redis = redis.Redis(
-            username=config.username,
             password=config.password, 
             host=config.host, 
             port=config.port, 
@@ -76,8 +75,8 @@ class RedisManager:
 
 
 class SessionManager(RedisManager):
-    def __init__(self, host: str = 'localhost', port: int = 6379, db: int = 0):
-        super().__init__(host, port, db)
+    def __init__(self, config: Redis = config.redis):
+        super().__init__(config)
 
         # Script Lua para criação atômica de sessão
         self.create_session_script = """
