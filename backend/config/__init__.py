@@ -99,7 +99,6 @@ class Config(BaseModel):
 # singleton leitura unica do .env
 config = Config()
 
-
 logger.add(
     'logs/app.log',
     level='WARNING',  # -> trigger event LEVEL for register.
@@ -108,6 +107,11 @@ logger.add(
     retention='1 week',
     format='{time:YYYY-MM-DD at HH:mm:ss} | {level} | {message} | {file} | {function} | {line}',
 )
+
+
+logger.debug('Config loaded')
+logger.info(config.postgres)
+logger.info(config.redis)
 
 
 if __name__ == '__main__':
