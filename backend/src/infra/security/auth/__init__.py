@@ -1,6 +1,7 @@
 from config import config, logger
-from .session import get_current_user_cookie
+
 from .jwt import get_current_user_jwt
+from .session import get_current_user_cookie
 
 
 def get_current_user():

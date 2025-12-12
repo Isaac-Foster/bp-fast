@@ -3,7 +3,6 @@ from typing import Protocol
 from fastapi import Response
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from src.core.ports.repository import RepositoryPort
 
 

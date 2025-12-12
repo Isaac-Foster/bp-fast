@@ -1,6 +1,6 @@
-from pydantic import BaseModel, Field, EmailStr, model_validator
 from email_validator import validate_email
 from fastapi import HTTPException
+from pydantic import BaseModel, EmailStr, Field, model_validator
 from src.utils import is_strong_pass
 
 

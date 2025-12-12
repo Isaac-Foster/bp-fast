@@ -1,11 +1,10 @@
 from dataclasses import dataclass
 
-from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends, HTTPException, Request
-
-from src.infra.database.connect.sql import get_session
+from sqlalchemy.ext.asyncio import AsyncSession
+from src.adapter.repository.user import UserModel, UserRepository
 from src.infra.database.connect.redis import session_manager
-from src.adapter.repository.user import UserRepository, UserModel
+from src.infra.database.connect.sql import get_session
 
 
 @dataclass

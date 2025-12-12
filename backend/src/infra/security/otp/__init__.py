@@ -1,10 +1,9 @@
 # otp_manager.py
-import io
 import base64
+import io
 
 import pyotp
 import qrcode
-
 from config import config
 
 

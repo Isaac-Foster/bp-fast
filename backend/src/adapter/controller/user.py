@@ -1,28 +1,24 @@
+import base64
 import io
 import json
-import base64
+from datetime import datetime, timedelta
 from http import HTTPStatus
 from zoneinfo import ZoneInfo
-from datetime import datetime, timedelta
 
+from config import config, logger
 from fastapi import HTTPException, Response
+from fastapi.responses import JSONResponse, StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi.responses import StreamingResponse, JSONResponse
-
-
+from src.adapter.repository.user import UserRepository
+from src.core.domain.user import UserBusinessRules
+from src.core.ports.controllers import ControllerPort
+from src.infra.database.connect.redis import redis_manager, session_manager
+from src.infra.security.auth.jwt import jwt_manager
+from src.infra.security.hashpass import hash_pass_manager
+from src.infra.security.otp import otp_manager
+from src.interfaces.schema.auth import SignIn, SignUp
 from src.utils import get_uuid
 from src.utils.helpers.sql import save_and_refresh
-from config import config, logger
-
-from src.interfaces.schema.auth import SignUp, SignIn
-from src.infra.security.otp import otp_manager
-from src.core.domain.user import UserBusinessRules
-
-from src.infra.security.auth.jwt import jwt_manager
-from src.core.ports.controllers import ControllerPort
-from src.adapter.repository.user import UserRepository
-from src.infra.security.hashpass import hash_pass_manager
-from src.infra.database.connect.redis import session_manager, redis_manager
 
 
 def _ensure_png_bytes(image_any) -> bytes:

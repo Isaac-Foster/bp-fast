@@ -1,17 +1,14 @@
 # db.py
 from typing import AsyncIterator
 
+from config import config
 from sqlalchemy.engine import URL
-
-from sqlalchemy.orm import registry
 from sqlalchemy.ext.asyncio import (
-    create_async_engine,
     AsyncSession,
     async_sessionmaker,
+    create_async_engine,
 )
-
-from config import config
-
+from sqlalchemy.orm import registry
 
 URI = URL.create(
     drivername=config.postgres.drivername,

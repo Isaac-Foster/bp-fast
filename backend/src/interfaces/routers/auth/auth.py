@@ -1,5 +1,4 @@
-from fastapi import APIRouter, Depends, Request, Response, Query
-
+from fastapi import APIRouter, Depends, Query, Request, Response
 from src.infra.security.auth import get_current_user
 
 router = APIRouter(prefix='/otp')

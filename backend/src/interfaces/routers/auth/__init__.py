@@ -1,15 +1,14 @@
-from fastapi import APIRouter, Depends
-
 from config import config, logger
+from fastapi import APIRouter, Depends
 from src.infra.security.auth import (
-    get_current_user_jwt,
     get_current_user_cookie,
+    get_current_user_jwt,
 )
 
 
 def configure_router(router_root):
-    from .user import router as user_router
     from .auth import router as auth_router
+    from .user import router as user_router
 
     logger.info('include auth router')
     logger.debug('Auth method selected: %s' % config.app.auth_method)

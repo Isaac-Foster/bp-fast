@@ -1,10 +1,10 @@
-from . import (
-    user,  # noqa
-    fingerprint,  # noqa
-    config,  # noqa
-)
+from src.infra.database.connect.sql import engine, register
 
-from src.infra.database.connect.sql import register, engine
+from . import (
+    config,  # noqa
+    fingerprint,  # noqa
+    user,  # noqa
+)
 
 
 async def init_db():

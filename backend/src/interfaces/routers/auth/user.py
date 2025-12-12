@@ -1,10 +1,9 @@
-from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import APIRouter, Query, Depends, Response
-
 from config import logger
-from src.infra.database.connect.sql import get_session
-from src.interfaces.schema.auth import SignUp, SignIn
+from fastapi import APIRouter, Depends, Query, Response
+from sqlalchemy.ext.asyncio import AsyncSession
 from src.adapter.controller.user import UserController
+from src.infra.database.connect.sql import get_session
+from src.interfaces.schema.auth import SignIn, SignUp
 
 router = APIRouter()
 

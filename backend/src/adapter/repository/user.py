@@ -1,10 +1,9 @@
 from pydantic import BaseModel
-from sqlalchemy import select, or_
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from src.core.ports.repository import RepositoryPort
 from src.infra.database.model.user import UserModel
 from src.interfaces.schema.auth import SignUp
-from src.core.ports.repository import RepositoryPort
 
 
 class UserRepository(RepositoryPort):

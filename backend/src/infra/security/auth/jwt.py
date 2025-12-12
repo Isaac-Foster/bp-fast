@@ -1,15 +1,13 @@
 from dataclasses import dataclass
 
 import jwt
+from config import config
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from config import config
-from src.infra.database.connect.sql import get_session
-from src.infra.database.connect.redis import session_manager
-
 from src.adapter.repository.user import UserRepository
+from src.infra.database.connect.redis import session_manager
+from src.infra.database.connect.sql import get_session
 
 
 @dataclass

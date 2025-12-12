@@ -1,9 +1,8 @@
 import json
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
 import redis.asyncio as redis
-
-from config import config, logger, Redis
+from config import Redis, config, logger
 
 
 class RedisManager:
@@ -13,11 +12,11 @@ class RedisManager:
 
     def __init__(self, config: Redis):
         self.redis = redis.Redis(
-            password=config.password, 
-            host=config.host, 
-            port=config.port, 
-            db=config.db, 
-            decode_responses=True
+            password=config.password,
+            host=config.host,
+            port=config.port,
+            db=config.db,
+            decode_responses=True,
         )
 
     async def insert(
