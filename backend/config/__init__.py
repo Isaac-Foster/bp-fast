@@ -7,7 +7,7 @@ from pydantic_settings import BaseSettings
 class LoadEnvFile(BaseSettings):
     model_config = {
         # Carrega o arquivo .env, mas variáveis de ambiente têm prioridade (comportamento padrão)
-        'env_file': '.env',
+        #'env_file': '.env',
         'env_file_encoding': 'utf-8',
         'extra': 'allow',
         'case_sensitive': False,
