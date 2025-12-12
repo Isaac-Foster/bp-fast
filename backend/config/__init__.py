@@ -45,6 +45,8 @@ class JWT(BaseModel):
 
 
 class Redis(BaseModel):
+    username: str = Field(..., alias='redis_username')
+    password: str = Field(..., alias='redis_password')
     host: str = Field(..., alias='redis_host')
     port: str = Field(..., alias='redis_port')
     db: int = Field(..., alias='redis_db')

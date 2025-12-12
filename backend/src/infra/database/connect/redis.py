@@ -3,7 +3,7 @@ from typing import Dict, Any, Optional
 
 import redis.asyncio as redis
 
-from config import config, logger
+from config import config, logger, Redis
 
 
 class RedisManager:
@@ -11,9 +11,14 @@ class RedisManager:
     Classe genérica para manipulação do Redis
     """
 
-    def __init__(self, host: str = 'localhost', port: int = 6379, db: int = 0):
+    def __init__(self, config: Redis):
         self.redis = redis.Redis(
-            host=host, port=port, db=db, decode_responses=True
+            username=config.username,
+            password=config.password, 
+            host=config.host, 
+            port=config.port, 
+            db=config.db, 
+            decode_responses=True
         )
 
     async def insert(
@@ -295,10 +300,5 @@ class SessionManager(RedisManager):
 
 
 # Instância global do gerenciador Redis
-redis_manager = RedisManager(
-    host=config.redis.host,
-    port= config.redis.port,
-    db=config.redis.db,
-)
-print(config.redis)
+redis_manager = RedisManager(config=config.redis)
 session_manager = SessionManager()
