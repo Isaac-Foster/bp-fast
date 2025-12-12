@@ -7,8 +7,6 @@ from src.infra.database.model import init_db
 from src.interfaces.routers import configure_routers
 
 app = FastAPI(
-    title=config.app.name,
-    summary=config.app.summary,
     description=config.app.description,
     version=config.app.version,
     default_response_class=ORJSONResponse,
@@ -33,7 +31,6 @@ async def startup_event():
     retry_delay = 2
 
     for attempt in range(max_retries):
-        logger.debug(config.redis)
         try:
             await init_db()
             break
